@@ -1,5 +1,6 @@
 #%%
 import pandas as pd
+from load_data import download_file_ziplink
 
 def remove_rows_with_missing_ratings(df):
     rating_col_lst=[col for col in df.columns if 'rating' in col]
@@ -27,6 +28,9 @@ def clean_tabular_data(df):
 
 
 if __name__ == "__main__":
+    link='https://aicore-project-files.s3.eu-west-1.amazonaws.com/airbnb-property-listings.zip'
+    file='tabular_data/listing.csv'
+    download_file_ziplink(link, file)
     path='tabular_data/listing.csv'
     listing_df=pd.read_csv(path)
     listing_df.drop('Unnamed: 19', axis=1, inplace=True)

@@ -1,2 +1,6 @@
 images/
 tabular_data/listing.csv
+data/processed_images/
+airbnb-property-listings.zip
+__pycache__
+.ipynb_checkpoints
