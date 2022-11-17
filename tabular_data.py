@@ -40,9 +40,9 @@ def load_airbnb(df,label_col):
     Returns:
         tuple: dataframe of features and labels (series)
     """
-    df=df.select_dtypes(exclude=[object])
-    features=df.drop(label_col)
     label=df[label_col]
+    features=df.drop(label_col, axis=1)
+    features=features.select_dtypes(exclude=[object])
     return (features, label)
 
 if __name__ == "__main__":
