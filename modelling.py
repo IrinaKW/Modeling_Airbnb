@@ -43,8 +43,6 @@ gradient_boost_param={'n_estimators':[500,1000,2000],
     'subsample':[.5,.75,1],
     'random_state':[1]}
 
-
-
 def train_model(X,y, model=SGDRegressor):
     xtrain, xtest, ytrain, ytest=train_test_split(X, y, test_size=0.2, random_state=1)
     xtrain, xval, ytrain, yval= train_test_split(xtrain, ytrain, test_size=0.25, random_state=1) # 0.25 x 0.8 = 0.2
