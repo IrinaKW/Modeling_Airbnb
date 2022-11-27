@@ -1,9 +1,11 @@
 #%%
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import SGDRegressor
+from sklearn import preprocessing
+from sklearn.linear_model import SGDRegressor, LogisticRegression
 from sklearn.preprocessing import StandardScaler, scale
-from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.metrics import mean_squared_error, log_loss
+from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -43,19 +45,27 @@ gradient_boost_param={'n_estimators':[500,1000,2000],
     'subsample':[.5,.75,1],
     'random_state':[1]}
 
-def train_model(X,y, model=SGDRegressor):
+def prep_data_sets(X,y):
     xtrain, xtest, ytrain, ytest=train_test_split(X, y, test_size=0.2, random_state=1)
     xtrain, xval, ytrain, yval= train_test_split(xtrain, ytrain, test_size=0.25, random_state=1) # 0.25 x 0.8 = 0.2
-    model_sgdr = model()
-    model_sgdr.fit(xtrain, ytrain)
-    return model_sgdr, xtrain, ytrain, xval, yval, xtest, ytest
+    return xtrain, ytrain, xval, yval, xtest, ytest
 
-def calculate_scores(x, y, model):
+def regression_performance(x, y, model):
     ypred=model.predict(x)
     mse=mean_squared_error(y, ypred)
     score=model.score(x,y)
     #graph_original_predictied(y, ypred)
     return mse, score
+
+def classification_performance(x, y, model):
+    # pred = model.predict_proba(x)
+    # mse=log_loss(y, pred)
+    ypred=model.predict(x)
+    score=model.score(x,y)
+    f1=f1_score(y, ypred, average='micro')
+    precision=precision_score(y, ypred, average='micro')
+    recall=recall_score(y, ypred,average='micro')
+    return f1, precision,recall, score
     
 def graph_original_predictied(y_original, y_predicted):
     x_ax = range(len(y_original))
@@ -92,7 +102,7 @@ def custom_tune_regression_model_hyperparameters(model_type, grid_dic, data_sets
         max_iter=param['max_iter']
         model=model_type(alpha=alpha, learning_rate=learning_rate, loss=loss, penalty=penalty, max_iter=max_iter)
         model.fit(data_sets[0], data_sets[1])
-        mse, score=calculate_scores(data_sets[2], data_sets[3], model)
+        mse, score=regression_performance(data_sets[2], data_sets[3], model)
         if mse<best_mse:
             best_mse=mse
             performance_metrics_dict["mse"] = mse
@@ -109,7 +119,7 @@ def tune_regression_model_hyperparameters(model_type, grid_dic, data_sets):
     gs_estimator = GridSearchCV(estimator=model, param_grid=params)
     gs_estimator.fit(data_sets[0], data_sets[1])
     best_hyperparameter_values_dict=gs_estimator.best_params_
-    mse, score=calculate_scores(data_sets[2], data_sets[3], gs_estimator)
+    mse, score=regression_performance(data_sets[2], data_sets[3], gs_estimator)
     performance_metrics_dict={}
     performance_metrics_dict["mse"] = mse
     performance_metrics_dict["rmse"] = mse**(1/2.0)
@@ -168,21 +178,24 @@ def find_best_model():
 
 if __name__ == "__main__":
     df=pd.read_csv('tabular_data/clean_tabular_data.csv')
-    X, y = load_airbnb(df, 'Price_Night')
+    X, y = load_airbnb(df, 'Category')
+    label_encoder=preprocessing.LabelEncoder()
+    y=label_encoder.fit_transform(y)
     X = scale(X)
-    y = scale(y)
-    #model_sgdr, xtrain, ytrain, xval, yval, xtest, ytest= train_model(X,y)
-    #data_sets=[xtrain, ytrain, xval, yval, xtest, ytest]
-    model_param_dic={SGDRegressor:sgd_param, 
-        DecisionTreeRegressor:decision_tree_param, 
-        RandomForestRegressor:random_forest_param, 
-        GradientBoostingRegressor:gradient_boost_param}
-    
-    #for item in model_param_dic.items():
-    #    evaluate_all_models(item[0], item[1], data_sets)
+    #y = scale(y)
+    xtrain, ytrain, xval, yval, xtest, ytest= prep_data_sets(X,y)
+    data_sets=[xtrain, ytrain, xval, yval, xtest, ytest]
+    # model_param_dic={SGDRegressor:sgd_param, 
+    #     DecisionTreeRegressor:decision_tree_param, 
+    #     RandomForestRegressor:random_forest_param, 
+    #     GradientBoostingRegressor:gradient_boost_param}
+    #model, param, metrics= find_best_model()
 
-    model, param, metrics= find_best_model()
-    print(model, metrics)
+    model=LogisticRegression()
+    model.fit(data_sets[0], data_sets[1])
+    print( classification_performance(data_sets[2], data_sets[3], model))
+
+ 
 
 
 # %%
