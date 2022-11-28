@@ -45,6 +45,13 @@ gradient_boost_param={'n_estimators':[500,1000,2000],
     'subsample':[.5,.75,1],
     'random_state':[1]}
 
+logistic_regression_param ={'solver': ['newton-cg', 'lbfgs', 'sag', 'saga'],
+    'penalty' : ['l1', 'l2', 'elasticnet', 'none'],
+    'C' : np.logspace(-2,2,5),
+    'max_iter' : [1000, 1500]}
+
+
+
 def prep_data_sets(X,y):
     xtrain, xtest, ytrain, ytest=train_test_split(X, y, test_size=0.2, random_state=1)
     xtrain, xval, ytrain, yval= train_test_split(xtrain, ytrain, test_size=0.25, random_state=1) # 0.25 x 0.8 = 0.2
@@ -126,6 +133,20 @@ def tune_regression_model_hyperparameters(model_type, grid_dic, data_sets):
     performance_metrics_dict["r2"] = score
     return gs_estimator, best_hyperparameter_values_dict, performance_metrics_dict
 
+def tune_classification_model_hyperparameters (model_type, grid_dic, data_sets):
+    model=model_type()
+    params=[grid_dic]
+    gs_estimator = GridSearchCV(estimator=model, param_grid=params, scoring='accuracy')
+    gs_estimator.fit(data_sets[0], data_sets[1])
+    best_hyperparameter_values_dict=gs_estimator.best_params_
+    f1, precision, recall, score=classification_performance(data_sets[2], data_sets[3], gs_estimator)
+    performance_metrics_dict={}
+    performance_metrics_dict["F1"]=f1
+    performance_metrics_dict["precision"] = precision
+    performance_metrics_dict["recall"] = recall
+    performance_metrics_dict["validation_accuracy"] = score
+    return gs_estimator, best_hyperparameter_values_dict, performance_metrics_dict
+
 
 def evaluate_all_models(model, grid_dic, data_sets):
     model_type=model()
@@ -191,11 +212,17 @@ if __name__ == "__main__":
     #     GradientBoostingRegressor:gradient_boost_param}
     #model, param, metrics= find_best_model()
 
-    model=LogisticRegression()
+    model=LogisticRegression(random_state=1, C=1.0, max_iter=1000, penalty='l2', solver='lbfgs')
     model.fit(data_sets[0], data_sets[1])
     print( classification_performance(data_sets[2], data_sets[3], model))
+
+    a, b, c =tune_classification_model_hyperparameters(LogisticRegression, logistic_regression_param, data_sets)
+    print (b, c)
 
  
 
 
 # %%
+model.get_config()
+
+
