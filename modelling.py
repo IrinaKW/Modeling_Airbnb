@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_sc
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 import matplotlib.pyplot as plt 
 import itertools
 import joblib
@@ -17,39 +18,7 @@ import os
 import re
 import glob
 from tabular_data import load_airbnb
-
-#Hyperparameteres grids
-sgd_param = {'alpha': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100],
-    'learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
-    'loss': ['squared_error', 'huber', 'epsilon_insensitive','squared_epsilon_insensitive'],
-    'penalty' : ['l2', 'l1', 'elasticnet'],
-    'max_iter' : [750, 1000, 1250, 1500]}
-
-decision_tree_param={"splitter":["best","random"],
-    "max_depth" : [1,3,5,7,9,11,12],
-    "min_samples_leaf":[1,2,3,4,5,6,7,8,9,10],
-    "min_weight_fraction_leaf":[0.1,0.2,0.3,0.4,0.5],
-    "max_features":[1.0, "log2","sqrt",None],
-    "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90]}
-
-random_forest_param={'bootstrap': [True, False],
-    'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-    'max_features': [1,0, 'sqrt'],
-    'min_samples_leaf': [1, 2, 4],
-    'min_samples_split': [2, 5, 10],
-    'n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]}
-
-gradient_boost_param={'n_estimators':[500,1000,2000],
-    'learning_rate':[.001,0.01,.1],
-    'max_depth':[1,2,4],
-    'subsample':[.5,.75,1],
-    'random_state':[1]}
-
-logistic_regression_param ={'solver': ['newton-cg', 'lbfgs', 'sag', 'saga'],
-    'penalty' : ['l1', 'l2', 'elasticnet', 'none'],
-    'C' : np.logspace(-2,2,5),
-    'max_iter' : [1000, 1500]}
-
+import hyperparameteres_grids as hg
 
 
 def prep_data_sets(X,y):
@@ -148,13 +117,18 @@ def tune_classification_model_hyperparameters (model_type, grid_dic, data_sets):
     return gs_estimator, best_hyperparameter_values_dict, performance_metrics_dict
 
 
-def evaluate_all_models(model, grid_dic, data_sets):
+def evaluate_all_models(model, grid_dic, data_sets, sub_folder):
     model_type=model()
     folder=str(model_type.__class__.__name__).replace('Regressor', '')
+    folder=str(model_type.__class__.__name__).replace('Classifier', '')
     new_name=re.findall('[A-Z][^A-Z]*', folder)
     new_name='_'.join(new_name).lower()
-    model, param, metrics=tune_regression_model_hyperparameters(model, grid_dic, data_sets)
-    path='models/regression/'+new_name+'/'
+    if sub_folder=='regression':
+        model, param, metrics=tune_regression_model_hyperparameters(model, grid_dic, data_sets)
+    else:
+        model, param, metrics=tune_classification_model_hyperparameters(model, grid_dic, data_sets)
+
+    path='models/'+sub_folder+'/'+new_name+'/'
     save_model(model, param, metrics, path)
     
 
@@ -216,13 +190,13 @@ if __name__ == "__main__":
     model.fit(data_sets[0], data_sets[1])
     print( classification_performance(data_sets[2], data_sets[3], model))
 
-    a, b, c =tune_classification_model_hyperparameters(LogisticRegression, logistic_regression_param, data_sets)
-    print (b, c)
+    #a, b, c =tune_classification_model_hyperparameters(LogisticRegression, hg.logistic_regression_param, data_sets)
+    #path = './models/classification/'
+    evaluate_all_models(RandomForestClassifier, hg.random_forest_class_param, data_sets,'classification')
 
  
 
 
+
+
 # %%
-model.get_config()
-
-
