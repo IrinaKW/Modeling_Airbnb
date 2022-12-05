@@ -58,16 +58,20 @@ scikit_learn==1.1.3
     all images are resized, the height of the smallest image is set as the height for all of the other images.
     w by h ratio is preserved
     resized images are saved into the new data/processed_images location
-- Model Training to predict the price for the listing per night:
-    Use sklearn to compute the key measures of performance for your regression model. That should include the RMSE, and R^2 for both the training and test sets.
+- Model Training to predict the price for the listing per night - Regression:
+    Use sklearn to compute the key measures of performance forthe  model: RMSE, and R^2.
     Create a function which performs a grid search over a reasonable range of hyperparameter values manually, followed by CVGrideSearch
-    Use decision trees, random forests, and gradient boosting regression models to determine the best model after the CVGrid Search
+    Use decision trees, random forests, and gradient boosting regression models to determine the best model after the CVGrid Search based on R2 scores
+- Model Training to predict the Cateogry label - Classification:
+    Use sklearn to compute the key measures of performance for your classification model: F1, recall, precision, validation accuracy.
+    Update tunning function to include classification model tuning with CVGrideSearch
+    Use decision trees, random forests, and gradient boosting classification models to determine the best model after the CVGrid Search best on validation accuracy scores.
 
     
 
 ## Screenshots
 ![Listing Data](./img/listing_table.png)
-![Best model outcome](./img/best_model.png)
+![Best models outcome](./img/best_models.png)
 
 
 ## Setup
@@ -75,6 +79,7 @@ All dependancies are listed in the requirements.txt
 
 
 ## Usage
+The hyperparamteters_grids.py contains 8 dictionary grids: 4 for regressionmodels and 4 for classification models
 ```
 #Hyperparameteres grids
 sgd_param = {'alpha': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100],
@@ -90,18 +95,16 @@ decision_tree_param={"splitter":["best","random"],
     "max_features":[1.0, "log2","sqrt",None],
     "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90]}
 
-random_forest_param={'bootstrap': [True, False],
-    'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-    'max_features': [1,0, 'sqrt'],
-    'min_samples_leaf': [1, 2, 4],
-    'min_samples_split': [2, 5, 10],
-    'n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]}
-
-gradient_boost_param={'n_estimators':[500,1000,2000],
-    'learning_rate':[.001,0.01,.1],
-    'max_depth':[1,2,4],
-    'subsample':[.5,.75,1],
-    'random_state':[1]}
+gradient_boosting_class_param={
+    "loss":["deviance"],
+    "learning_rate": [0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2],
+    "min_samples_split": np.linspace(0.1, 0.5, 12),
+    "min_samples_leaf": np.linspace(0.1, 0.5, 12),
+    "max_depth":[3,5,8],
+    "max_features":["log2","sqrt"],
+    "criterion": ["friedman_mse",  "mae"],
+    "subsample":[0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+    "n_estimators":[10]
 
 ```
 
@@ -112,10 +115,9 @@ Project is: _in progress_
 
 
 ## Room for Improvement
-
-To do:
-- Train the model
-- 
+- Done: train regression models with tuning hyperparamters
+- Done: train classification models with tuning hyperparameters 
+- To Do: Nural Network 
 
 
 ## Acknowledgements

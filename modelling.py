@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler, scale
 from sklearn.metrics import mean_squared_error, log_loss
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 import matplotlib.pyplot as plt 
@@ -148,19 +148,22 @@ def save_model(model, param, metrics, path):
     print ('Model is saved')
 
 
-def find_best_model():
-    #upload metrics, compare r2, take the highest
-    path = "./models/regression"
+def find_best_model(reg_or_class):
+    #upload metrics, compares scores (validation r2 for regression or validation accuracy for classification), return the highest
+    path = "./models/"+reg_or_class
     metrics_files = glob.glob(path + "/**/metrics.json", recursive = True)
-    best_r2=0
+    best_score=0
     for file in metrics_files:
         f = open(str(file))
         metrics_dic = json.load(f)
-        r2=metrics_dic['r2']
-        if r2>best_r2:
-            best_r2=r2
+        if reg_or_class=='regression':
+            score=metrics_dic['r2']
+        else: 
+            score=metrics_dic['validation_accuracy']
+        if score>best_score:
+            best_score=score
             best_name=str(file).split('/')[-2]
-    path='./models/regression/'+best_name+'/'
+    path='./models/'+reg_or_class+'/'+best_name+'/'
     model=joblib.load(path+'model.joblib')
     with open (path+'hyperparameters.json', 'r') as fp:
         param=json.load(fp)
@@ -180,23 +183,24 @@ if __name__ == "__main__":
     #y = scale(y)
     xtrain, ytrain, xval, yval, xtest, ytest= prep_data_sets(X,y)
     data_sets=[xtrain, ytrain, xval, yval, xtest, ytest]
-    # model_param_dic={SGDRegressor:sgd_param, 
-    #     DecisionTreeRegressor:decision_tree_param, 
-    #     RandomForestRegressor:random_forest_param, 
-    #     GradientBoostingRegressor:gradient_boost_param}
-    #model, param, metrics= find_best_model()
-
-    model=LogisticRegression(random_state=1, C=1.0, max_iter=1000, penalty='l2', solver='lbfgs')
-    model.fit(data_sets[0], data_sets[1])
-    print( classification_performance(data_sets[2], data_sets[3], model))
-
-    #a, b, c =tune_classification_model_hyperparameters(LogisticRegression, hg.logistic_regression_param, data_sets)
-    #path = './models/classification/'
-    evaluate_all_models(RandomForestClassifier, hg.random_forest_class_param, data_sets,'classification')
-
- 
+    regression_model_param_dic={SGDRegressor:hg.sgd_param, 
+        DecisionTreeRegressor:hg.decision_tree_param, 
+        RandomForestRegressor:hg.random_forest_param, 
+        GradientBoostingRegressor:hg.gradient_boost_param}
+    for pair in regression_model_param_dic.items():
+        model=pair[0]()
+        model.fit(data_sets[0], data_sets[1])
+        print('train',pair[0], regression_performance(data_sets[0], data_sets[1], model))
+        print('validation',pair[0],regression_performance(data_sets[2], data_sets[3], model))
+        print('test',pair[0],regression_performance(data_sets[4], data_sets[5], model))
 
 
+    model, param, metrics = find_best_model('regression')
+    print ('best regression model is: ', model)
+    print('with metrics', metrics)
 
+    # model, param, metrics = find_best_model('classification')
+    # print ('best classification model is: ', model)
+    # print('with metrics', metrics)
 
-# %%
+    #%%

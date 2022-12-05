@@ -1,6 +1,6 @@
 import numpy as np
 
-#Hyperparameteres grids
+#Regression models hyperparameteres grids
 sgd_param = {'alpha': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100],
     'learning_rate': ['constant', 'optimal', 'invscaling', 'adaptive'],
     'loss': ['squared_error', 'huber', 'epsilon_insensitive','squared_epsilon_insensitive'],
@@ -27,14 +27,26 @@ gradient_boost_param={'n_estimators':[500,1000,2000],
     'subsample':[.5,.75,1],
     'random_state':[1]}
 
+# Classification models hyperparamteres grids
 logistic_regression_param ={'solver': ['newton-cg', 'lbfgs', 'sag', 'saga'],
     'penalty' : ['l1', 'l2', 'elasticnet', 'none'],
     'C' : np.logspace(-2,2,5)}
 
-decision_trees_class_param={}
+decision_tree_class_param={'criterion' : ['gini', 'entropy'],
+    'max_depth' : [2,4,6,8,10,12]}
 
 random_forest_class_param={'n_estimators' : list(range(10,101,10)),
     'max_features' : list(range(6,32,5))}
 
 
-gradient_boosting_class_param={}
+gradient_boosting_class_param={
+    "loss":["deviance"],
+    "learning_rate": [0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2],
+    "min_samples_split": np.linspace(0.1, 0.5, 12),
+    "min_samples_leaf": np.linspace(0.1, 0.5, 12),
+    "max_depth":[3,5,8],
+    "max_features":["log2","sqrt"],
+    "criterion": ["friedman_mse",  "mae"],
+    "subsample":[0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+    "n_estimators":[10]
+    }
