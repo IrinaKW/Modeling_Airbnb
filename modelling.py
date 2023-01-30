@@ -14,12 +14,13 @@ import matplotlib.pyplot as plt
 import itertools
 import joblib
 import json
+import yaml
 import os
 import re
 import glob
 from tabular_data import load_airbnb
 import hyperparameteres_grids as hg
-
+#%%
 
 def prep_data_sets(X,y):
     xtrain, xtest, ytrain, ytest=train_test_split(X, y, test_size=0.2, random_state=1)
@@ -172,6 +173,10 @@ def find_best_model(reg_or_class):
 
     return model, param, metrics
 
+    def get_nn_config():
+        d= yaml.full_load(open('nn_config.yaml'))
+        return d 
+
 
 
 if __name__ == "__main__":
@@ -203,4 +208,17 @@ if __name__ == "__main__":
     # print ('best classification model is: ', model)
     # print('with metrics', metrics)
 
-    #%%
+#%%
+
+
+
+ 
+
+d=get_nn_config()
+print (d)
+
+#%%
+
+Specify a keyword argument called "config" which must be passed to your model class upon initialisation.
+
+Your network should then use that config to set the corresponding hyperparameters.
