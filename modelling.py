@@ -18,6 +18,7 @@ import yaml
 import os
 import re
 import glob
+import torch
 from tabular_data import load_airbnb
 import hyperparameteres_grids as hg
 #%%
@@ -133,7 +134,12 @@ def evaluate_all_models(model, grid_dic, data_sets, sub_folder):
     save_model(model, param, metrics, path)
     
 
-def save_model(model, param, metrics, path):
+def save_model(model, param, metrics, path=''):
+    if isinstance(model,torch.nn.Module):
+        torch.save(model.state_dict(), 'neural_networks/regression/model.pt')
+
+
+
     isExist = os.path.exists(path)
     if not isExist:
         os.makedirs(path)
@@ -173,9 +179,9 @@ def find_best_model(reg_or_class):
 
     return model, param, metrics
 
-    def get_nn_config():
-        d= yaml.full_load(open('nn_config.yaml'))
-        return d 
+def get_nn_config():
+    d= yaml.full_load(open('nn_config.yaml'))
+    return d 
 
 
 
