@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import itertools
 import joblib
 import json
+import datetime
 import yaml
 import os
 import re
@@ -134,24 +135,31 @@ def evaluate_all_models(model, grid_dic, data_sets, sub_folder):
     save_model(model, param, metrics, path)
     
 
-def save_model(model, param, metrics, path=''):
+def save_model(model, param, metrics, path='new'):
     if isinstance(model,torch.nn.Module):
-        torch.save(model.state_dict(), 'neural_networks/regression/model.pt')
+        exact_time=str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        path= 'neural_networks/regression/'+exact_time+'/'
+        isExist = os.path.exists(path)
+        if not isExist:
+            os.makedirs(path)
+        model_filename=path+'model.pt'
+        torch.save(model.state_dict(), model_filename)
 
-
-
-    isExist = os.path.exists(path)
-    if not isExist:
-        os.makedirs(path)
-
-    model_filename = path+'model.joblib'
+    else:
+        isExist = os.path.exists(path)
+        if not isExist:
+            os.makedirs(path)
+        model_filename = path+'model.joblib'
+        joblib.dump(model, model_filename)
+    
     hyperparam_filename=path+'hyperparameters.json'
     metrics_filename=path+'metrics.json'
-    joblib.dump(model, model_filename)
+
     with open(hyperparam_filename, 'w') as fp:
         json.dump(param,fp)
     with open(metrics_filename, 'w') as fp:    
         json.dump(metrics, fp)
+
     print ('Model is saved')
 
 
@@ -183,6 +191,17 @@ def get_nn_config():
     d= yaml.full_load(open('nn_config.yaml'))
     return d 
 
+def update_nn_config(params):
+    fname = "nn_config.yaml"
+    stream = open(fname, 'r')
+    data = yaml.load(stream)
+    data['instances'][0]['optimiser']= params['optim']
+    data['instances'][0]['learning_rate'] = params['lr']
+    data['instances'][0]['hidden_layer_width'] = params['width']
+    data['instances'][0]['model_depth'] = params['depth']
+    data['instances'][0]['epochs'] = params['epochs']
+    with open(fname, 'w') as yaml_file:
+        yaml_file.write( yaml.dump(data, default_flow_style=False))
 
 
 if __name__ == "__main__":
@@ -215,16 +234,3 @@ if __name__ == "__main__":
     # print('with metrics', metrics)
 
 #%%
-
-
-
- 
-
-d=get_nn_config()
-print (d)
-
-#%%
-
-Specify a keyword argument called "config" which must be passed to your model class upon initialisation.
-
-Your network should then use that config to set the corresponding hyperparameters.

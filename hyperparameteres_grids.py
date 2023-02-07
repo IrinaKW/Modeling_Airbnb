@@ -50,3 +50,11 @@ gradient_boosting_class_param={
     "subsample":[0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
     "n_estimators":[10]
     }
+
+nn_model_param = {
+    'optimizer': ["SGD", "Adam"],
+    'learning_rate': [0.01, 0.001],
+    'hidden_layer_width': [10, 15, 20],
+    'depth': [2, 4, 6],
+    'epochs':[2, 10]
+    }
