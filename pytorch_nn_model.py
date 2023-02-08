@@ -41,7 +41,8 @@ def train(model, data_loader, config):
     optimiser_class = config['optimiser']
     optimiser_instance = getattr(torch.optim, optimiser_class)
     optimiser = optimiser_instance(model.parameters(), lr=lr)
-
+    loss_train=[]
+    r2_score=[]
     #writer=SummaryWriter()
     
     batch_idx=0
@@ -52,9 +53,14 @@ def train(model, data_loader, config):
             features=features.type(torch.float32)
             labels=labels.unsqueeze(1)
             predicted=model(features)
-            loss=F.mse_loss(predicted, labels.float())
+            loss=criterion(predicted, labels.float())
             loss.backward()
             print('Loss', loss.item())
+            
+            loss_train.append(loss.item)
+            r2=criterion2(predicted, labels.float())
+            r2_score.append(r2.item())
+
             #optimization step
             optimiser.step()
             #reset grad params for next backward step
@@ -63,63 +69,57 @@ def train(model, data_loader, config):
             batch_idx+=1
             #prediction.append(prediction_time)
         
-        #if batch_idx%epochs==0:
-        #val_loss, val_acc = evaluate(model, val_loader)
-        #writer.add_scalar('Loss/Val', val_loss, batch_idx)
-        #writer.add_scalar('Accuracy/Val', val_acc, batch_idx)
+        if batch_idx%epochs==0:
+            training_time=time.time()-training_start_time
+            avg_loss_train=np.mean(loss_train)
+            r2_train=np.mean(r2_score)
+            RMSE_loss_train=torch.square(avg_loss_train)
+            RMSE_loss_val, r2_val = evaluate(model, val_loader)
+            RMSE_loss_test, r2_test = evaluate(model, test_loader)
+            #writer.add_scalar('Loss/Val', val_loss, batch_idx)
+            #writer.add_scalar('Accuracy/Val', val_acc, batch_idx)
 
-    training_time=time.time()-training_start_time
-    return training_time
-     
-
-def evaluate(model, training_time, epochs):
     metrics_dic={}
-
     number_of_predictions = epochs * len(train_set)
     inference_latency = training_time / number_of_predictions
     metrics_dic['training_time']=training_time
     metrics_dic['inference_latency']=inference_latency
-
-    #RMSE and R_squared evaluation
-    rmse_train, r2_train=calculate_RMSE_R2(model, train_set)
-    rmse_val, r2_val=calculate_RMSE_R2(model, valid_set)
-    rmse_test, r2_test=calculate_RMSE_R2(model, test_set)
-    RMSE_loss=[rmse_train, rmse_val, rmse_test]
+    RMSE_loss=[RMSE_loss_train, RMSE_loss_val, RMSE_loss_test]
     R_squared=[r2_train, r2_val, r2_test]
     metrics_dic["RMSE_loss"] = [loss.item() for loss in RMSE_loss]
     metrics_dic["R_squared"] = [score.item() for score in R_squared]
     return metrics_dic
 
+def evaluate(model, dataloader):
+    losses=[]
+    r2=[]
+    for batch in dataloader:
+        features, labels = batch
+        features=features.type(torch.float32)
+        labels=labels.unsqueeze(1)
+        predicted=model(features)
+        loss=criterion(predicted, labels.float())
+        losses.append(loss.detach())
+        r2=criterion2(predicted, labels.float())
+        r2.append(r2.detach())
+        n_examples+=len(labels)
+    avg_loss=np.mean(losses)
+    avg_r2=np.mean(r2)
+    RMSE_score=torch.square(avg_loss)
+    return RMSE_score, avg_r2
 
-def calculate_RMSE_R2(model, data_set):
-    """evaluates RMSE and R2 score of the data set
 
-    Args:
-        model (_type_): pretrained model 
-        data_set (_type_): dataset of various features and labels
-
-    Returns:
-        _type_: RMSE loss value and estimated R2 score based on the data set given
-    """
-    X = torch.stack([tuple[0] for tuple in data_set]).type(torch.float32)
-    y = torch.stack([torch.tensor(tuple[1]) for tuple in data_set])
-    y = torch.unsqueeze(y, 1)
-    y_hat = model(X)
-    rmse_loss = torch.sqrt(F.mse_loss(y_hat, y.float()))
-    r2_score = 1 - rmse_loss / torch.var(y.float())
-    return rmse_loss, r2_score
-
-def tune_nn_model(model, grid_dic):
+def tune_nn_model(model, RMSE_loss_val,grid_dic):
     keys, values = zip(*grid_dic.items())
     experiments = [dict(zip(keys, v)) for v in itertools.product(*values)]
-    best_RMSE_loss=1000
+    best_RMSE_loss=RMSE_loss_val
     for params in experiments:
         modelling.update_nn_config(params)
-        training_time=train(model, train_loader, config=config)
-        metrics_dic=model, training_time, params['epochs']
-        if metrics_dic['RMSE_loss'][1]<best_RMSE_loss: 
+        training_time = train(model, train_loader, config=config)
+        metrics_dic = evaluate(model, training_time, params['epochs'])
+        if metrics_dic['RMSE_loss'][1] < best_RMSE_loss: 
             best_RMSE_loss=metrics_dic['RMSE_loss'][1]
-            best_model=model.state_dict()
+            best_model=model
             best_config=params
             best_metrics_dic=metrics_dic
     return best_model, best_config, best_metrics_dic
@@ -127,6 +127,8 @@ def tune_nn_model(model, grid_dic):
 if __name__ == "__main__":
     config=modelling.get_nn_config()
     model=LinearRegression(config)
+    criterion=torch.nn.MSELoss()
+    criterion2=R2Score()
     mydata=AirbnbNightlyPriceImageDataset('tabular_data/clean_tabular_data.csv', 'Price_Night')
 
     #Create train, validation, test sets
@@ -141,14 +143,12 @@ if __name__ == "__main__":
     val_loader=DataLoader(valid_set, batch_size=batch_size, shuffle=True)
     test_loader=DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
-    training_time= train(model, train_loader, config=config)
-    metrics_dic=evaluate(model, training_time, config['epochs'])
+    metrics_dic = train(model, train_loader, config=config)
     print('First Model', metrics_dic)
+    RMSE_loss_val=metrics_dic['RMSE_loss'][1]
 
-    best_model, best_config, best_metrics_dic=tune_nn_model(model, hg.nn_model_param)
-    #metrics_dic=evaluate(model, training_time, config['epochs'])
-    print('Best Model', metrics_dic)
-    modelling.save_model(best_model, best_config, best_metrics_dic)
+    #best_model, best_config, best_metrics_dic=tune_nn_model(model, RMSE_loss_val, hg.nn_model_param)
+    #print('Best Model', metrics_dic)
+    #modelling.save_model(best_model, best_config, best_metrics_dic)
 
-#%%
-
+# %%

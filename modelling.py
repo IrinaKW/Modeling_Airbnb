@@ -194,12 +194,12 @@ def get_nn_config():
 def update_nn_config(params):
     fname = "nn_config.yaml"
     stream = open(fname, 'r')
-    data = yaml.load(stream)
-    data['instances'][0]['optimiser']= params['optim']
-    data['instances'][0]['learning_rate'] = params['lr']
-    data['instances'][0]['hidden_layer_width'] = params['width']
-    data['instances'][0]['model_depth'] = params['depth']
-    data['instances'][0]['epochs'] = params['epochs']
+    data = yaml.safe_load(stream)
+    data['optimiser']= params['optimiser']
+    data['learning_rate'] = params['learning_rate']
+    data['hidden_layer_width'] = params['hidden_layer_width']
+    data['model_depth'] = params['model_depth']
+    data['epochs'] = params['epochs']
     with open(fname, 'w') as yaml_file:
         yaml_file.write( yaml.dump(data, default_flow_style=False))
 

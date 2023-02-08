@@ -52,9 +52,9 @@ gradient_boosting_class_param={
     }
 
 nn_model_param = {
-    'optimizer': ["SGD", "Adam"],
+    'optimiser': ["SGD", "Adam"],
     'learning_rate': [0.01, 0.001],
-    'hidden_layer_width': [10, 15, 20],
-    'depth': [2, 4, 6],
+    'hidden_layer_width': [9],
+    'model_depth': [2, 4, 6],
     'epochs':[2, 10]
     }
